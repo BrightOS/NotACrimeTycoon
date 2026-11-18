@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#14121d">
   <title>Neon Coast — Ночной берег</title>
-  <link rel="stylesheet" href="./styles.css?v=world3">
+  <link rel="stylesheet" href="./styles.css?v=owners4">
 </head>
 <body>
 <main id="stage" aria-label="Neon Coast — Ночной берег">
@@ -29,13 +29,13 @@
   </div>
   <section id="inspector" class="popup glass" role="dialog" aria-labelledby="biz-name" hidden>
     <button class="close" aria-label="Закрыть" data-icon="close"></button>
-    <div class="face"><img id="portrait" alt=""><div><small id="availability"></small><h2 id="biz-name"></h2><p id="owner"></p></div></div>
+    <div class="face"><span id="business-icon" class="business-icon" aria-hidden="true"></span><div><small id="availability"></small><h2 id="biz-name"></h2><p id="owner"></p></div></div>
     <p class="description" id="description"></p>
-    <div class="legacy"><small>ЛЕГЕНДА ЭПОХИ</small><strong id="legend"></strong><a id="era" target="_blank" rel="noopener"></a></div><div class="facts"><div><small>Уровень</small><b id="level"></b></div><div><small>Доход</small><b id="current-rate"></b></div><div><small>Прирост</small><b id="next-rate"></b></div></div>
+    <div class="legacy"><small>ИГРА ЭПОХИ</small><a id="era" target="_blank" rel="noopener"></a></div><div class="facts"><div><small>Уровень</small><b id="level"></b></div><div><small>Доход</small><b id="current-rate"></b></div><div><small>Прирост</small><b id="next-rate"></b></div></div>
     <button class="action" id="buy"><span id="buy-label"></span><b id="price"></b></button><p class="hint" id="buy-hint"></p>
   </section>
   <section id="crew" class="drawer glass" role="dialog" aria-labelledby="crew-heading" hidden><button class="close" aria-label="Закрыть" data-icon="close"></button><small class="kicker">ЛИЧНЫЕ ДЕЛА</small><h2 id="crew-heading">Команда района</h2><div id="roster"></div></section>
   <section id="mission" class="drawer glass" role="dialog" aria-labelledby="mission-title" hidden><button class="close" aria-label="Закрыть" data-icon="close"></button><small class="kicker">ГОРОДСКОЙ ЗАКАЗ</small><h2 id="mission-title"></h2><p class="description" id="mission-description"></p><div class="route-row" id="routes"></div><div class="mission-progress"><span>Прогресс</span><b id="mission-progress"></b></div><div class="track"><i id="mission-bar"></i></div><button id="claim" class="action"></button></section>
   <div id="toast" role="status" hidden></div>
-</main><script type="module" src="./app.js?v=world3"></script>
+</main><script type="module" src="./app.js?v=owners4"></script>
 </body></html>

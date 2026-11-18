@@ -1,63 +1,57 @@
 export const CREW = [
   {
-    name: "Майло Фокс",
+    name: "Клод",
     business: "Рэкет",
     era: "3D · GTA III",
-    legend: "Клод",
     cost: 50,
     rate: 2,
     image: "assets/crew-1.webp",
-    description: "У Майло крошечный гараж и весь квартал в знакомых. С его конторы начинается семейный рэкет."
+    description: "У Клода крошечный гараж и весь квартал в знакомых. С его конторы начинается семейный рэкет."
   },
   {
-    name: "Вера Вольт",
+    name: "Томми Версетти",
     business: "Эскорт",
     era: "3D · Vice City",
-    legend: "Томми Версетти",
     cost: 250,
     rate: 9,
     image: "assets/crew-2.webp",
-    description: "Когда лимузины Веры выходят на набережную, даже ночной диджей ставит их песню. Она ведёт семейный конвой."
+    description: "Когда лимузины Томми выходят на набережную, даже ночной диджей ставит их песню. Он ведёт семейный конвой."
   },
   {
-    name: "Леон Рейес",
+    name: "Карл Джонсон",
     business: "Таблетки",
     era: "3D · San Andreas",
-    legend: "Карл Джонсон",
     cost: 1250,
     rate: 40,
     image: "assets/crew-3.webp",
-    description: "Леон унаследовал аптеку с вечной вывеской «Открыто». В семейной книге её знают под именем «Таблетки»."
+    description: "Карл унаследовал аптеку с вечной вывеской «Открыто». В семейной книге её знают под именем «Таблетки»."
   },
   {
-    name: "Ника Грей",
+    name: "Нико Беллик",
     business: "Оружие",
     era: "HD · GTA IV",
-    legend: "Нико Беллик",
     cost: 6250,
     rate: 180,
     image: "assets/crew-4.webp",
-    description: "Ника держит оружейную лавку на старой верфи. Над прилавком висит портрет деда в парадном костюме."
+    description: "Нико держит оружейную лавку на старой верфи. Над прилавком висит портрет деда в парадном костюме."
   },
   {
-    name: "Реми Кросс",
+    name: "Франклин Клинтон",
     business: "Ночной клуб",
     era: "HD · GTA V",
-    legend: "Франклин Клинтон",
     cost: 31250,
     rate: 800,
     image: "assets/crew-5.webp",
-    description: "Реми сам встречает гостей своего клуба. Ровно в полночь весь танцпол поёт вместе с ним."
+    description: "Франклин сам встречает гостей своего клуба. Ровно в полночь весь танцпол поёт вместе с ним."
   },
   {
-    name: "Сола Вейл",
+    name: "Люсия Каминос",
     business: "Казино",
     era: "HD · GTA VI",
-    legend: "Люсия Каминос",
     cost: 156250,
     rate: 3600,
     image: "assets/crew-6.webp",
-    description: "За стеклом казино Солы видны огни всех шести районов. Первый жетон заведения она подарила Майло."
+    description: "За стеклом казино Люсии видны огни всех шести районов. Первый жетон заведения она подарила Клоду."
   }
 ];
 
@@ -116,7 +110,7 @@ export function getContract(state) {
   const order = state.contract ?? freshContract(1, 1);
   if (order.number === 1) {
     const ready = state.levels[0] > 0;
-    return { number: 1, title: "Первый квартал", description: "Наймите Майло Фокса и откройте дело «Рэкет».",
+    return { number: 1, title: "Первый квартал", description: "Наймите Клода и откройте дело «Рэкет».",
       progress: Number(ready), target: 1, reward: 35, ready, routes: [], selectedRoute: null };
   }
   const index = (order.number - 2) % ORDERS.length;

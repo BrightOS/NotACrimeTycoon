@@ -1,4 +1,4 @@
-import * as game from "./game.js?v=world3";
+import * as game from "./game.js?v=owners4";
 
 const shapes = {
   close:'<path d="m6 6 12 12M18 6 6 18"/>',
@@ -39,6 +39,9 @@ const reduced = matchMedia('(prefers-reduced-motion:reduce)');
 const mobile = matchMedia('(max-width:700px)');
 const pins=[], cards=[], dots=[];
 let selected=0, panel=null, opener=null, lastTick=Date.now(), lastSave=lastTick, lastFx=0, toastTimer;
+function ownerCaption(member,index){
+  return (index===5?'Владелица':'Владелец')+' · '+member.name;
+}
 function settle() {
   const now=Date.now();
   game.tick(state, Math.max(0,(now-lastTick)/1000));
@@ -102,9 +105,10 @@ game.CREW.forEach((member,index)=>{
   pin.innerHTML='<span class="pin-sign"><i></i><span></span></span>';
   pin.onclick=()=>choose(index);$('pins').append(pin);pins.push(pin);
   const card=document.createElement('button');card.className='crew-member';
-  card.innerHTML='<img alt=""><span><strong></strong><small></small></span><i></i>';
-  card.querySelector('img').src=member.image;card.querySelector('strong').textContent=member.name;
-  card.querySelector('small').textContent=member.business;
+  card.innerHTML='<span class="business-icon" aria-hidden="true"></span><span><strong></strong><small></small></span><i></i>';
+  card.querySelector('.business-icon').innerHTML=icon(symbols[index]);
+  card.querySelector('strong').textContent=member.business;
+  card.querySelector('small').textContent=ownerCaption(member,index);
   card.onclick=()=>choose(index,true);$('roster').append(card);cards.push(card);
   const dot=document.createElement('i');dot.className='mini-dot';dot.style.left=x+'%';dot.style.top=y+'%';
   $('mini-markers').append(dot);dots.push(dot);
@@ -151,10 +155,14 @@ function render(){
   });
   if(panel==='inspector'){
     const m=game.CREW[selected],level=state.levels[selected],locked=selected>0&&!state.levels[selected-1],cost=game.nextCost(state,selected);
-    if($('portrait').getAttribute('src')!==m.image)$('portrait').src=m.image;
+    const symbol=$('business-icon');
+    if(symbol.dataset.symbol!==symbols[selected]){
+      symbol.dataset.symbol=symbols[selected];
+      symbol.innerHTML=icon(symbols[selected]);
+    }
     $('availability').textContent=locked?'ЗАКРЫТО':level?'ПОД КОНТРОЛЕМ':'ДОСТУПНО';
-    $('biz-name').textContent=m.business;$('owner').textContent=m.name;$('description').textContent=m.description;
-    $('legend').textContent=m.legend??'';$('era').textContent=m.era+' ↗';$('era').href=archives[selected];
+    $('biz-name').textContent=m.business;$('owner').textContent=ownerCaption(m,selected);$('description').textContent=m.description;
+    $('era').textContent=m.era+' ↗';$('era').href=archives[selected];
     $('level').textContent=level;$('current-rate').textContent=cash(m.rate*level)+'/с';$('next-rate').textContent='+'+cash(m.rate)+'/с';
     $('buy').disabled=locked||state.cash<cost;$('buy-label').textContent=locked?'Закрыто':level?'Улучшить':'Открыть дело';$('price').textContent=cash(cost);
     $('buy-hint').textContent=locked?'Сначала откройте дело «'+game.CREW[selected-1].business+'»':state.cash<cost?'Не хватает '+cash(Math.ceil(cost-state.cash)):'';
