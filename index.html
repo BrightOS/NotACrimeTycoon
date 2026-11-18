@@ -3,81 +3,43 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#120f20">
-  <meta name="description" content="Неоновый экономический тайкун. Собирайте выручку и развивайте бизнес на побережье.">
-  <title>Neon Coast — тайкун на побережье</title>
-  <link rel="stylesheet" href="./styles.css">
-  <script type="module" src="./app.js"></script>
+  <meta name="theme-color" content="#101219">
+  <title>Neon Coast — Ночной берег</title>
+  <link rel="stylesheet" href="./styles.css?v=district2">
 </head>
 <body>
-  <header class="topbar">
-    <div class="shell topbar-inner">
-      <a class="masthead" href="./" aria-label="Neon Coast — главная">
-        <span class="masthead-mark" aria-hidden="true"></span>
-        <span>NEON<span class="masthead-accent"> COAST</span></span>
-      </a>
-      <span class="save-status" id="save-status">Автосохранение</span>
-    </div>
-  </header>
-
-  <main class="shell game">
-    <section class="hero" aria-labelledby="game-title">
-      <div class="hero-copy">
-        <p class="hero-kicker"><span></span>Тайкун на побережье</p>
-        <h1 id="game-title">Neon <em>Coast</em></h1>
-        <p class="hero-description">Собирайте выручку, нанимайте управляющих и развивайте бизнес на ночном побережье.</p>
+  <header class="topbar"><div class="top-inner">
+    <a class="brand" href="#city" aria-label="Neon Coast — к карте"><span class="brand-sun"></span><span>NEON<i>COAST</i></span></a>
+    <nav aria-label="Разделы игры"><a class="nav-active" href="#city"><span data-icon="map"></span> Район</a><a href="#crew"><span data-icon="users"></span> Команда</a></nav>
+    <div class="save-light"><b></b><span id="save-status">Автосохранение</span></div>
+  </div></header>
+  <main>
+    <section class="dashboard" aria-label="Показатели района">
+      <div class="district-heading"><div class="eyebrow"><span class="dash"></span> УПРАВЛЕНИЕ РАЙОНОМ</div><h1>Ночной берег<span>.</span></h1></div>
+      <div class="metrics">
+        <div class="metric"><span class="metric-icon green" data-icon="wallet"></span><div><small>Капитал</small><strong id="cash">$50</strong></div></div>
+        <div class="metric"><span class="metric-icon blue" data-icon="trend"></span><div><small>Доход</small><strong id="income">+$1/с</strong></div></div>
+        <div class="metric"><span class="metric-icon pink" data-icon="blocks"></span><div><small>Бизнесы</small><strong id="owned">0 / 6</strong></div></div>
       </div>
     </section>
-
-    <section class="finance" aria-label="Финансы">
-      <dl class="finance-stats">
-        <div class="stat stat-cash">
-          <dt><span class="stat-icon" aria-hidden="true">$</span>Касса</dt>
-          <dd id="cash">$50</dd>
-        </div>
-        <div class="stat stat-income">
-          <dt><span class="stat-icon" aria-hidden="true">↗</span>Доход в секунду</dt>
-          <dd id="income">$1/с</dd>
-        </div>
-        <div class="stat stat-record">
-          <dt><span class="stat-icon" aria-hidden="true">✦</span>Личный рекорд</dt>
-          <dd id="record">$0</dd>
-        </div>
-      </dl>
-      <div class="finance-action">
-        <button class="collect" id="collect" type="button">
-          <span class="collect-icon" aria-hidden="true">+</span>
-          <span>Собрать выручку</span>
-          <span class="collect-amount" id="collect-amount">+$5</span>
-        </button>
-      </div>
-    </section>
-
-    <section class="portfolio" aria-labelledby="portfolio-title">
-      <header class="section-header">
-        <h2 id="portfolio-title">Бизнесы</h2>
-        <div class="generation">
-          <div class="generation-heading">
-            <span id="generation">Поколение 1 из 6</span>
-            <span id="generation-detail"></span>
-          </div>
-          <progress id="generation-progress" value="0" max="100" aria-labelledby="generation"></progress>
-        </div>
-      </header>
-
-      <div class="business-grid" id="businesses"></div>
-      <noscript><p class="no-script">Включите JavaScript, чтобы запустить игру.</p></noscript>
-    </section>
-  </main>
-
-  <aside class="offline-toast" id="offline-toast" role="status" hidden>
-    <span class="offline-icon" aria-hidden="true">↗</span>
-    <div>
-      <strong id="offline-title">Выручка за время отсутствия</strong>
-      <p id="offline-text"></p>
+    <div class="play-layout" id="city">
+      <section class="map-panel panel" aria-labelledby="map-title">
+        <div class="panel-head"><h2 id="map-title"><span data-icon="map"></span> Карта района</h2><span class="live"><b></b> В ЭФИРЕ</span></div>
+        <div class="map-viewport"><div class="map-world" id="map-world"><img class="map-art" src="./assets/district.webp" alt=""><div class="map-shade"></div><div id="pins"></div></div>
+        <div class="map-corner"><i></i> NEON COAST <span>/</span> CITY MAP</div></div>
+        <div class="map-footer"><div class="collect-info"><span class="collect-icon" data-icon="bolt"></span><div><strong>Уличная выручка</strong><small id="collect-hint">Добавить деньги в кассу</small></div></div><button id="collect" class="collect"><span data-icon="bolt"></span> Собрать <b id="collect-amount">+$5</b></button></div>
+      </section>
+      <aside class="inspector panel" aria-labelledby="biz-name">
+        <div class="panel-head"><h2><span data-icon="brief"></span> Бизнес</h2><span class="serial" id="serial"></span></div>
+        <div class="inspector-body"><div class="portrait-row"><div class="portrait"><img id="portrait" alt=""></div><div><span class="eyebrow manager">УПРАВЛЯЮЩИЙ</span><strong id="owner"></strong><span id="availability" class="status"></span></div></div>
+        <h2 id="biz-name"></h2><p id="description"></p>
+        <div class="details"><div><span>Уровень</span><b id="level"></b></div><div><span>Доход бизнеса</span><b id="current-rate"></b></div><div><span>Следующий уровень</span><b class="gain" id="next-rate"></b></div></div>
+        <button id="buy" class="buy"><span id="buy-label"></span><b id="price"></b></button><small class="buy-hint" id="buy-hint"></small></div>
+      </aside>
     </div>
-    <button id="offline-close" class="offline-close" type="button" aria-label="Закрыть уведомление">×</button>
-  </aside>
-  <div id="game-status" class="sr-only" role="status" aria-live="polite"></div>
+    <section id="crew" class="crew"><div class="section-title"><h2>Команда района</h2><span id="crew-count"></span></div><div class="roster" id="roster"></div></section>
+    <section class="mission panel" id="mission" hidden><span class="mission-icon" data-icon="flag"></span><div class="mission-text"><small>ЗАДАНИЕ РАЙОНА</small><h2 id="mission-title"></h2><p id="mission-progress"></p></div><button id="claim"></button></section>
+  </main><div id="toast" role="status" aria-live="polite" hidden></div>
+  <script type="module" src="./app.js?v=district2"></script>
 </body>
 </html>

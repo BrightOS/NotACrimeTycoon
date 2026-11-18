@@ -60,7 +60,7 @@ const STARTING_INCOME = 1;
 const OFFLINE_LIMIT_SECONDS = 4 * 60 * 60;
 
 export function createGame(now = Date.now()) {
-  return { cash: 50, totalEarned: 0, levels: CREW.map(() => 0), savedAt: now };
+  return { cash: 50, totalEarned: 0, levels: CREW.map(() => 0), savedAt: now, contract: freshContract(1, 1) };
 }
 
 export function incomeRate(state) {
@@ -87,16 +87,78 @@ export function purchase(state, index) {
   return true;
 }
 
+const ORDERS = [
+  ["Премьера на пирсе", "Развезите кассеты по летним кинотеатрам.", "Соберите выручку за ночные сеансы."],
+  ["Роллер-диско", "Передайте приглашения на набережной.", "Соберите выручку за вечерний прокат."],
+  ["Радиомарафон", "Доставьте пластинки в студию.", "Соберите выручку от ночного эфира."],
+  ["Огни ночного рынка", "Развезите заказы по торговым рядам.", "Соберите выручку за вечернюю ярмарку."]
+];
+
+function freshContract(number, rate) {
+  return { number, rate, selectedRoute: "active", stops: 0, receipts: 0 };
+}
+
+function validContract(order) {
+  return order && Number.isSafeInteger(order.number) && order.number >= 1 &&
+    Number.isFinite(order.rate) && order.rate >= 1 &&
+    ["active", "idle"].includes(order.selectedRoute) &&
+    Number.isSafeInteger(order.stops) && order.stops >= 0 &&
+    Number.isFinite(order.receipts) && order.receipts >= 0;
+}
+
+export function getContract(state) {
+  const order = state.contract ?? freshContract(1, 1);
+  if (order.number === 1) {
+    const ready = state.levels[0] > 0;
+    return { number: 1, title: "Первый сеанс", description: "Откройте видеопрокат Майло Фокса.",
+      progress: Number(ready), target: 1, reward: 35, ready, routes: [], selectedRoute: null };
+  }
+  const index = (order.number - 2) % ORDERS.length;
+  const [title, activeText, idleText] = ORDERS[index];
+  const duration = 25 + index * 5;
+  const routes = [
+    { id: "active", label: "Доставка", description: activeText, target: 8 + index * 2,
+      progress: order.stops, reward: Math.ceil(order.rate * 14) },
+    { id: "idle", label: "Выручка", description: idleText, target: order.rate * duration,
+      progress: Math.floor(order.receipts), reward: Math.ceil(order.rate * 20) }
+  ];
+  const route = routes.find(item => item.id === order.selectedRoute) ?? routes[0];
+  return { ...route, title, number: order.number, selectedRoute: route.id, routes,
+    progress: Math.min(route.progress, route.target), ready: route.progress >= route.target };
+}
+
+export function selectContractRoute(state, id) {
+  if (!state.contract || state.contract.number < 2 || !["active", "idle"].includes(id)) return false;
+  state.contract.selectedRoute = id;
+  return true;
+}
+
+export function claimContract(state) {
+  const order = getContract(state);
+  if (!order.ready) return 0;
+  state.cash += order.reward;
+  state.totalEarned += order.reward;
+  state.contract = freshContract(order.number + 1, incomeRate(state));
+  return order.reward;
+}
+
+export function collectValue(state) {
+  return 5 + Math.floor((incomeRate(state) - STARTING_INCOME) / 2);
+}
+
 export function collect(state) {
   if (!state || !Number.isFinite(state.cash) || !Number.isFinite(state.totalEarned)) return 0;
-  state.cash += 5;
-  state.totalEarned += 5;
-  return 5;
+  const earned = collectValue(state);
+  state.cash += earned;
+  state.totalEarned += earned;
+  if (state.contract?.number > 1) state.contract.stops += 1;
+  return earned;
 }
 
 export function tick(state, seconds) {
   if (!state || !Number.isFinite(state.cash) || !Number.isFinite(state.totalEarned) || !Number.isFinite(seconds) || seconds <= 0) return 0;
   const earned = incomeRate(state) * seconds;
+  if (state.contract?.number > 1) state.contract.receipts += earned;
   state.cash += earned;
   state.totalEarned += earned;
   return earned;
@@ -133,7 +195,7 @@ export function loadGame(now = Date.now()) {
     for (let i = 1; i < levels.length; i++) {
       if (levels[i - 1] === 0) levels[i] = 0;
     }
-    const state = { cash: saved.cash, totalEarned: saved.totalEarned, levels, savedAt: saved.savedAt };
+    const state = { cash: saved.cash, totalEarned: saved.totalEarned, levels, contract: validContract(saved.contract) ? saved.contract : freshContract(1, 1), savedAt: saved.savedAt };
     const elapsed = Math.max(0, Math.min(OFFLINE_LIMIT_SECONDS, (now - saved.savedAt) / 1000));
     const offlineEarned = tick(state, elapsed);
     state.savedAt = now;
