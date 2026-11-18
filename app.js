@@ -1,6 +1,8 @@
-import * as game from "./game.js?v=owners4";
+import * as game from "./game.js?v=harbor5";
+import { getDialogue } from "./banter.js?v=harbor5";
 
 const shapes = {
+  bank:'<path d="m2 9 10-6 10 6H2zm2 11h16M3 22h18M6 11v7m4-7v7m4-7v7m4-7v7"/>',
   close:'<path d="m6 6 12 12M18 6 6 18"/>',
   right:'<path d="m9 5 7 7-7 7"/>',
   lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
@@ -38,7 +40,11 @@ const cash = n => '$' + (n>=1e6 ? short : money).format(Math.floor(n));
 const reduced = matchMedia('(prefers-reduced-motion:reduce)');
 const mobile = matchMedia('(max-width:700px)');
 const pins=[], cards=[], dots=[];
+let bankRound=null;
 let selected=0, panel=null, opener=null, lastTick=Date.now(), lastSave=lastTick, lastFx=0, toastTimer;
+function setAvatar(node,index){
+  node.style.backgroundPosition=(index%3)*50+'% '+Math.floor(index/3)*100+'%';
+}
 function ownerCaption(member,index){
   return (index===5?'Владелица':'Владелец')+' · '+member.name;
 }
@@ -69,8 +75,9 @@ function updateMini(){
   positionInspector();
 }
 function positionInspector(){
-  if(panel!=='inspector'||mobile.matches)return;
-  const box=$('inspector'),point=pins[selected].getBoundingClientRect();
+  if((panel!=='inspector'&&panel!=='bank')||mobile.matches)return;
+  const box=$(panel),marker=panel==='bank'?$('bank-pin'):pins[selected];
+  const point=marker.getBoundingClientRect();
   const availableRight=innerWidth-point.right-16;
   const x=availableRight>=box.offsetWidth ? point.right+8 : point.left-box.offsetWidth-8;
   box.style.left=Math.max(8,Math.min(innerWidth-box.offsetWidth-8,x))+'px';
@@ -78,7 +85,9 @@ function positionInspector(){
 }
 function show(name,trigger){
   const previous=opener;
-  ['inspector','crew','mission'].forEach(id=>$(id).hidden=id!==name);
+  bankRound=null;
+  $('dialogue').hidden=true;
+  ['inspector','crew','mission','bank'].forEach(id=>$(id).hidden=id!==name);
   panel=name;
   $('open-crew').setAttribute('aria-expanded',String(name==='crew'));
   $('open-mission').setAttribute('aria-expanded',String(name==='mission'));
@@ -105,8 +114,8 @@ game.CREW.forEach((member,index)=>{
   pin.innerHTML='<span class="pin-sign"><i></i><span></span></span>';
   pin.onclick=()=>choose(index);$('pins').append(pin);pins.push(pin);
   const card=document.createElement('button');card.className='crew-member';
-  card.innerHTML='<span class="business-icon" aria-hidden="true"></span><span><strong></strong><small></small></span><i></i>';
-  card.querySelector('.business-icon').innerHTML=icon(symbols[index]);
+  card.innerHTML='<span class="avatar" aria-hidden="true"></span><span><strong></strong><small></small></span><i></i>';
+  setAvatar(card.querySelector('.avatar'),index);
   card.querySelector('strong').textContent=member.business;
   card.querySelector('small').textContent=ownerCaption(member,index);
   card.onclick=()=>choose(index,true);$('roster').append(card);cards.push(card);
@@ -115,9 +124,10 @@ game.CREW.forEach((member,index)=>{
 });
 function renderContract(){
   const c=game.getContract(state);
-  $('objective-title').textContent=c.ready?'Забрать '+cash(c.reward):c.number===1?'Открыть '+game.CREW[0].business.toLocaleLowerCase('ru'):c.title;
+  $('objective-title').textContent=c.ready?'Забрать '+cash(c.reward):c.title;
+  $('quest-number').textContent='ГОРОДСКОЙ ЗАКАЗ № '+c.number;
   $('mission-title').textContent=c.title;$('mission-description').textContent=c.description;
-  $('mission-progress').textContent=money.format(c.progress)+' / '+money.format(c.target);
+  $('mission-progress').textContent=money.format(c.progress)+' / '+money.format(c.target)+' '+(c.unit??'');
   $('objective-bar').style.width=$('mission-bar').style.width=Math.min(100,100*c.progress/c.target)+'%';
   $('reward-dot').hidden=!c.ready;$('claim').disabled=!c.ready;
   $('claim').textContent=(c.ready?'Забрать награду ':'Награда ')+cash(c.reward);
@@ -126,13 +136,66 @@ function renderContract(){
     $('routes').dataset.order=key;$('routes').replaceChildren();
     for(const route of c.routes){
       const button=document.createElement('button');button.dataset.route=route.id;
-      button.textContent=route.label+' · '+cash(route.reward);
+      const label=document.createElement('strong'),prize=document.createElement('span');
+      label.textContent=route.label;prize.textContent='Награда '+cash(route.reward);
+      button.append(label,prize);
       button.onclick=()=>{settle();game.selectContractRoute(state,route.id);save();render()};
       $('routes').append(button);
     }
   }
-  for(const button of $('routes').children)button.setAttribute('aria-pressed',String(c.selectedRoute===button.dataset.route));
+  for(const button of $('routes').children){
+    const route=c.routes.find(item=>item.id===button.dataset.route);
+    button.setAttribute('aria-pressed',String(c.selectedRoute===route.id));
+    button.title=route.description;
+    button.querySelector('span').textContent=money.format(route.progress)+' / '+money.format(route.target)+' '+(route.unit??'')+' · '+cash(route.reward);
+  }
 }
+const exactCash=value=>'$'+money.format(Math.floor(value));
+function renderBank(){
+  const bank=game.getBank(state);
+  $('bank-lock').hidden=bank.unlocked;
+  $('bank-pin').setAttribute('aria-label','Ограбление банка · '+(bank.unlocked?'доступно':'закрыто'));
+  $('bank-pin').setAttribute('aria-expanded',String(panel==='bank'));
+  if(panel!=='bank')return;
+  $('bank-status').textContent=bank.unlocked?'Все шесть дел открыты. Банк доступен.':'Для доступа откройте все шесть дел района.';
+  $('bank-stake').textContent=exactCash(bank.stake);
+  $('bank-cash').textContent=exactCash(state.cash);
+  $('bank-balance').textContent=state.cash>=bank.stake?exactCash(state.cash-bank.stake):'Не хватает '+exactCash(Math.ceil(bank.stake-state.cash));
+  $('bank-risk').textContent='Шанс 50% получить '+exactCash(bank.payout)+' вместе со ставкой. При неудаче ставка сгорает.';
+  const result=bank.lastResult;
+  $('bank-result').hidden=!result;
+  if(result){
+    $('bank-result').textContent='Раунд '+result.round+' · '+(result.won?'Удача! Чистый выигрыш +':'Ставка проиграна −')+exactCash(Math.abs(result.net));
+  }
+  $('bank-action').disabled=!bank.canPlay;
+  $('bank-action').textContent=!bank.unlocked?'Банк закрыт':!bank.canPlay?'Недостаточно денег':bankRound===null?'Подготовить ставку':'Подтвердить ставку '+exactCash(bank.stake);
+  positionInspector();
+}
+$('bank-pin').onclick=()=>show('bank',$('bank-pin'));
+$('find-bank').onclick=()=>{aim(.17,.86);show('bank',$('bank-pin'))};
+$('bank-action').onclick=()=>{
+  settle();
+  const bank=game.getBank(state);
+  if(!bank.canPlay){bankRound=null;render();return}
+  if(bankRound===null){bankRound=bank.round;renderBank();return}
+  const expectedRound=bankRound;
+  bankRound=null;
+  const result=game.playBank(state,expectedRound);
+  if(result){
+    lastSave=Date.now();
+    message(result.won?'Банк · выигрыш +'+exactCash(result.net):'Банк · ставка проиграна');
+  }else{
+    const latest=game.loadGame().state;
+    if(game.getBank(latest).round>expectedRound){
+      Object.assign(state,latest);
+      lastTick=Date.now();
+      message('Другой раунд уже завершён. Касса обновлена.');
+    }else{
+      message('Не удалось сохранить раунд. Ставка осталась в кассе.');
+    }
+  }
+  render();
+};
 function render(){
   $('cash').textContent=cash(state.cash);$('income').textContent='+'+cash(game.incomeRate(state))+'/с';
   $('owned').textContent=state.levels.filter(Boolean).length+' / '+game.CREW.length;
@@ -155,11 +218,7 @@ function render(){
   });
   if(panel==='inspector'){
     const m=game.CREW[selected],level=state.levels[selected],locked=selected>0&&!state.levels[selected-1],cost=game.nextCost(state,selected);
-    const symbol=$('business-icon');
-    if(symbol.dataset.symbol!==symbols[selected]){
-      symbol.dataset.symbol=symbols[selected];
-      symbol.innerHTML=icon(symbols[selected]);
-    }
+    setAvatar($('business-icon'),selected);
     $('availability').textContent=locked?'ЗАКРЫТО':level?'ПОД КОНТРОЛЕМ':'ДОСТУПНО';
     $('biz-name').textContent=m.business;$('owner').textContent=ownerCaption(m,selected);$('description').textContent=m.description;
     $('era').textContent=m.era+' ↗';$('era').href=archives[selected];
@@ -169,6 +228,7 @@ function render(){
     positionInspector();
   }
   renderContract();
+  renderBank();
 }
 for(const [id,name] of [['open-crew','crew'],['open-mission','mission'],['objective','mission']]){
   $(id).onclick=()=>show(panel===name?null:name,$(id));
@@ -178,6 +238,13 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape'&&panel)show(
 $('buy').onclick=()=>{
   settle();if(!game.purchase(state,selected))return render();
   save();render();const pin=pins[selected];pin.classList.remove('pulse');void pin.offsetWidth;pin.classList.add('pulse');
+  if(state.levels[selected]>1){
+    const exchange=getDialogue(selected,state.levels[selected]);
+    $('line-speaker').textContent=exchange.speaker;$('line').textContent=exchange.line;
+    $('reply-speaker').textContent=exchange.replySpeaker;$('reply').textContent=exchange.reply;
+    $('dialogue').hidden=false;
+    positionInspector();
+  }
   message(game.CREW[selected].business+' · '+(state.levels[selected]===1?'Дело открыто':'Уровень '+state.levels[selected]));
 };
 $('collect').onclick=()=>{settle();const value=game.collect(state);save();render();spark($('collect'),'+'+cash(value))};

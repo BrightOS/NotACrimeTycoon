@@ -57,6 +57,7 @@ export const CREW = [
 
 const SAVE_KEY = "neon-coast-save";
 const STARTING_INCOME = 1;
+const BANK_STAKE = 1_000_000;
 const OFFLINE_LIMIT_SECONDS = 4 * 60 * 60;
 
 export function createGame(now = Date.now()) {
@@ -103,7 +104,49 @@ function validContract(order) {
     Number.isFinite(order.rate) && order.rate >= 1 &&
     ["active", "idle"].includes(order.selectedRoute) &&
     Number.isSafeInteger(order.stops) && order.stops >= 0 &&
-    Number.isFinite(order.receipts) && order.receipts >= 0;
+    Number.isFinite(order.receipts) && order.receipts >= 0 &&
+    (order.baseLevels === undefined || (Array.isArray(order.baseLevels) && order.baseLevels.length === CREW.length &&
+      order.baseLevels.every(level => Number.isSafeInteger(level) && level >= 0) &&
+      Number.isFinite(order.reserve) && order.reserve >= 0));
+}
+
+function issueContract(state, number) {
+  const order = freshContract(number, incomeRate(state));
+  order.baseLevels = [...state.levels];
+  order.reserve = Math.floor(state.cash) + order.rate * 30;
+  return order;
+}
+
+function districtContract(state, order) {
+  const phase = (order.number - 2) % 4;
+  const next = order.baseLevels.findIndex(level => level === 0);
+  const owned = next < 0 ? CREW.length : next;
+  const focus = Math.max(0, owned - 1);
+  const level = order.baseLevels[focus] + 1;
+  const targetRate = order.rate + CREW[focus].rate;
+  const upgrade = { label: "Модернизация", description: `Поднимите «${CREW[focus].business}» до уровня ${level}.`,
+    progress: state.levels[focus], target: level, unit: "ур." };
+  const revenue = { label: "Оборот", description: "Накопите выручку от открытых дел за время заказа.",
+    progress: Math.floor(order.receipts), target: order.rate * (25 + 5 * phase), unit: "$" };
+  const hiring = next < 0 ? upgrade : { label: "Новый владелец", description: `Откройте дело «${CREW[next].business}».`,
+    progress: state.levels.filter(value => value > 0).length, target: owned + 1, unit: "дел" };
+  const growth = { label: "Рост дохода", description: "Увеличьте общий доход в секунду с помощью найма или улучшений.",
+    progress: incomeRate(state), target: targetRate, unit: "$/с" };
+  const savings = { label: "Резерв", description: "Сохраните указанную сумму в кассе к моменту выплаты.",
+    progress: Math.floor(state.cash), target: order.reserve, unit: "$" };
+  const plans = [
+    ["Инвестиции в квартал", upgrade, savings],
+    [next < 0 ? "Большая сеть" : "Расширение сети", hiring, revenue],
+    ["Совет владельцев", growth, savings],
+    ["Итоги сезона", revenue, upgrade]
+  ];
+  const [title, first, second] = plans[phase];
+  const routes = [first, second].map((goal, i) => ({
+    ...goal, progress: Math.min(goal.progress, goal.target), id: i === 0 ? "active" : "idle",
+    reward: Math.ceil(order.rate * (i === 0 ? 20 : 14))
+  }));
+  const route = routes.find(item => item.id === order.selectedRoute);
+  return { ...route, title, number: order.number, routes, selectedRoute: route.id, ready: route.progress >= route.target };
 }
 
 export function getContract(state) {
@@ -111,15 +154,17 @@ export function getContract(state) {
   if (order.number === 1) {
     const ready = state.levels[0] > 0;
     return { number: 1, title: "Первый квартал", description: "Наймите Клода и откройте дело «Рэкет».",
-      progress: Number(ready), target: 1, reward: 35, ready, routes: [], selectedRoute: null };
+      unit: "дел", progress: Number(ready), target: 1, reward: 35, ready, routes: [], selectedRoute: null };
   }
+  if (order.baseLevels) return districtContract(state, order);
+  // Finish the running order from an older save before issuing new objectives.
   const index = (order.number - 2) % ORDERS.length;
   const [title, activeText, idleText] = ORDERS[index];
   const duration = 25 + index * 5;
   const routes = [
-    { id: "active", label: "Доставка", description: activeText, target: 8 + index * 2,
+    { id: "active", label: "Доставка", unit: "шт.", description: activeText, target: 8 + index * 2,
       progress: order.stops, reward: Math.ceil(order.rate * 14) },
-    { id: "idle", label: "Выручка", description: idleText, target: order.rate * duration,
+    { id: "idle", label: "Выручка", unit: "$", description: idleText, target: order.rate * duration,
       progress: Math.floor(order.receipts), reward: Math.ceil(order.rate * 20) }
   ];
   const route = routes.find(item => item.id === order.selectedRoute) ?? routes[0];
@@ -138,7 +183,7 @@ export function claimContract(state) {
   if (!order.ready) return 0;
   state.cash += order.reward;
   state.totalEarned += order.reward;
-  state.contract = freshContract(order.number + 1, incomeRate(state));
+  state.contract = issueContract(state, order.number + 1);
   return order.reward;
 }
 
@@ -164,6 +209,33 @@ export function tick(state, seconds) {
   return earned;
 }
 
+function previousBankResult(state) {
+  const result = state?.bank;
+  if (!result || !Number.isSafeInteger(result.round) || result.round < 1 || typeof result.won !== "boolean") return null;
+  const payout = result.won ? BANK_STAKE * 2 : 0;
+  return { round: result.round, won: result.won, stake: BANK_STAKE, payout, net: payout - BANK_STAKE };
+}
+
+export function getBank(state) {
+  const lastResult = previousBankResult(state);
+  const unlocked = state?.levels?.length === CREW.length && state.levels.every(level => level > 0);
+  return { unlocked, canPlay: unlocked && state.cash >= BANK_STAKE, stake: BANK_STAKE,
+    payout: BANK_STAKE * 2, lastResult, round: lastResult?.round ?? 0 };
+}
+
+export function playBank(state, expectedRound) {
+  const bank = getBank(state);
+  if (!bank.canPlay || expectedRound !== bank.round) return null;
+  const won = Math.random() < 0.5;
+  const payout = won ? bank.payout : 0;
+  const result = { won, round: bank.round + 1, stake: bank.stake, payout, net: payout - bank.stake };
+  const updated = { ...state, bank: result, cash: state.cash + result.net,
+    totalEarned: state.totalEarned + Math.max(0, result.net) };
+  if (!saveGame(updated, Date.now(), expectedRound)) return null;
+  Object.assign(state, updated);
+  return result;
+}
+
 function isValidSave(value) {
   return value && typeof value === "object" &&
     Number.isFinite(value.cash) && value.cash >= 0 &&
@@ -173,13 +245,22 @@ function isValidSave(value) {
     Number.isFinite(value.savedAt) && value.savedAt >= 0;
 }
 
-export function saveGame(state, now = Date.now()) {
+export function saveGame(state, now = Date.now(), expectedBankRound) {
   try {
-    if (typeof localStorage === "undefined" || !isValidSave(state) || !Number.isFinite(now)) return;
+    if (typeof localStorage === "undefined" || !isValidSave(state) || !Number.isFinite(now)) return false;
+    const raw = localStorage.getItem(SAVE_KEY);
+    let storedRound = 0;
+    if (raw) {
+      try { storedRound = previousBankResult(JSON.parse(raw))?.round ?? 0; }
+      catch { /* Replace an unreadable save with the current valid state. */ }
+    }
+    if (expectedBankRound !== undefined && storedRound !== expectedBankRound) return false;
+    if (storedRound > (previousBankResult(state)?.round ?? 0)) return false;
     localStorage.setItem(SAVE_KEY, JSON.stringify({ ...state, savedAt: now }));
     state.savedAt = now;
+    return true;
   } catch {
-    // Storage can be disabled, full, or unavailable in restricted browser contexts.
+    return false;
   }
 }
 
@@ -195,7 +276,7 @@ export function loadGame(now = Date.now()) {
     for (let i = 1; i < levels.length; i++) {
       if (levels[i - 1] === 0) levels[i] = 0;
     }
-    const state = { cash: saved.cash, totalEarned: saved.totalEarned, levels, contract: validContract(saved.contract) ? saved.contract : freshContract(1, 1), savedAt: saved.savedAt };
+    const state = { bank: previousBankResult(saved), cash: saved.cash, totalEarned: saved.totalEarned, levels, contract: validContract(saved.contract) ? saved.contract : freshContract(1, 1), savedAt: saved.savedAt };
     const elapsed = Math.max(0, Math.min(OFFLINE_LIMIT_SECONDS, (now - saved.savedAt) / 1000));
     const offlineEarned = tick(state, elapsed);
     state.savedAt = now;
