@@ -1,5 +1,5 @@
-import * as game from "./game.js?v=harbor5";
-import { getDialogue } from "./banter.js?v=harbor5";
+import * as game from "./game.js?v=bubble6";
+import { getDialogue } from "./banter.js?v=bubble6";
 
 const shapes = {
   bank:'<path d="m2 9 10-6 10 6H2zm2 11h16M3 22h18M6 11v7m4-7v7m4-7v7m4-7v7"/>',
@@ -74,19 +74,31 @@ function updateMini(){
   Object.assign($('mini-view').style,{left:100*viewport.scrollLeft/sw+'%',top:100*viewport.scrollTop/sh+'%',width:100*w/sw+'%',height:100*h/sh+'%'});
   positionInspector();
 }
+function positionDialogue(){
+  const bubble=$('dialogue');
+  if(bubble.hidden)return;
+  const face=$('business-icon').getBoundingClientRect();
+  const x=Math.max(8,Math.min(innerWidth-bubble.offsetWidth-8,face.left-12));
+  const below=face.top<bubble.offsetHeight+18;
+  const y=below?face.bottom+10:face.top-bubble.offsetHeight-10;
+  bubble.classList.toggle('below',below);
+  bubble.style.left=x+'px';bubble.style.top=y+'px';
+  bubble.style.setProperty('--tail-x',(face.left+face.width/2-x-7)+'px');
+}
 function positionInspector(){
-  if((panel!=='inspector'&&panel!=='bank')||mobile.matches)return;
+  if((panel!=='inspector'&&panel!=='bank')||mobile.matches){positionDialogue();return}
   const box=$(panel),marker=panel==='bank'?$('bank-pin'):pins[selected];
   const point=marker.getBoundingClientRect();
   const availableRight=innerWidth-point.right-16;
   const x=availableRight>=box.offsetWidth ? point.right+8 : point.left-box.offsetWidth-8;
   box.style.left=Math.max(8,Math.min(innerWidth-box.offsetWidth-8,x))+'px';
   box.style.top=Math.max(8,Math.min(viewport.clientHeight-box.offsetHeight-10,point.top-box.offsetHeight*.35))+'px';
+  positionDialogue();
 }
 function show(name,trigger){
   const previous=opener;
   bankRound=null;
-  $('dialogue').hidden=true;
+  $('dialogue').hidePopover?.();$('dialogue').hidden=true;
   ['inspector','crew','mission','bank'].forEach(id=>$(id).hidden=id!==name);
   panel=name;
   $('open-crew').setAttribute('aria-expanded',String(name==='crew'));
@@ -242,7 +254,7 @@ $('buy').onclick=()=>{
     const exchange=getDialogue(selected,state.levels[selected]);
     $('line-speaker').textContent=exchange.speaker;$('line').textContent=exchange.line;
     $('reply-speaker').textContent=exchange.replySpeaker;$('reply').textContent=exchange.reply;
-    $('dialogue').hidden=false;
+    $('dialogue').hidden=false;$('dialogue').showPopover?.();
     positionInspector();
   }
   message(game.CREW[selected].business+' · '+(state.levels[selected]===1?'Дело открыто':'Уровень '+state.levels[selected]));

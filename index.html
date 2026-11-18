@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#14121d">
   <title>Neon Coast — Ночной берег</title>
-  <link rel="stylesheet" href="./styles.css?v=harbor5">
+  <link rel="stylesheet" href="./styles.css?v=bubble6">
 </head>
 <body>
 <main id="stage" aria-label="Neon Coast — Ночной берег">
   <div id="viewport" role="region" tabindex="0" aria-label="Карта района. Стрелки перемещают карту."><div id="world">
-    <img id="art" src="./assets/underworld.webp?v=harbor5" alt="Изометрическая карта ночного побережья" draggable="false">
+    <img id="art" src="./assets/underworld.webp?v=bubble6" alt="Изометрическая карта ночного побережья" draggable="false">
     <div id="lights" aria-hidden="true"><i class="launch"><b></b></i></div><div id="pins"></div>
     <button id="bank-pin" class="pin bank-pin" aria-haspopup="dialog" aria-label="Ограбление банка"><span class="pin-sign"><span data-icon="bank"></span><span>Банк</span><i data-icon="lock" id="bank-lock"></i></span></button>
   </div></div>
@@ -22,7 +22,7 @@
   </div>
   <button id="objective" class="objective glass" aria-haspopup="dialog"><span class="quest-icon" data-icon="flag"></span><span class="quest-copy"><small>ТЕКУЩАЯ ЦЕЛЬ</small><strong id="objective-title"></strong><i><em id="objective-bar"></em></i></span><span data-icon="right"></span></button>
   <div class="location"><div class="wordmark">NEON<span>COAST</span></div><h1>Ночной берег</h1><span class="territory"><i></i> Под контролем <b id="owned"></b></span></div>
-  <div class="minimap glass" id="mini" title="Переместиться по карте"><img src="./assets/underworld.webp?v=harbor5" alt=""><div id="mini-markers"><i class="mini-dot bank-dot"></i></div><div id="mini-view"></div></div>
+  <div class="minimap glass" id="mini" title="Переместиться по карте"><img src="./assets/underworld.webp?v=bubble6" alt=""><div id="mini-markers"><i class="mini-dot bank-dot"></i></div><div id="mini-view"></div></div>
   <div class="controls">
     <button id="open-crew" class="command glass" aria-haspopup="dialog"><span data-icon="users"></span><span>Команда</span></button>
     <button id="open-mission" class="command glass" aria-haspopup="dialog"><span data-icon="flag"></span><span>Заказы</span><i id="reward-dot" hidden></i></button>
@@ -34,7 +34,7 @@
     <p class="description" id="description"></p>
     <div class="legacy"><small>ИГРА ЭПОХИ</small><a id="era" target="_blank" rel="noopener"></a></div><div class="facts"><div><small>Уровень</small><b id="level"></b></div><div><small>Доход</small><b id="current-rate"></b></div><div><small>Прирост</small><b id="next-rate"></b></div></div>
     <button class="action" id="buy"><span id="buy-label"></span><b id="price"></b></button><p class="hint" id="buy-hint"></p>
-    <div id="dialogue" class="dialogue" role="status" hidden><div><b id="line-speaker"></b><span id="line"></span></div><div><b id="reply-speaker"></b><span id="reply"></span></div></div>
+    <div id="dialogue" class="dialogue" role="status" popover="manual" hidden><div><b id="line-speaker"></b><span id="line"></span></div><div><b id="reply-speaker"></b><span id="reply"></span></div></div>
   </section>
   <section id="crew" class="drawer glass" role="dialog" aria-labelledby="crew-heading" hidden><button class="close" aria-label="Закрыть" data-icon="close"></button><small class="kicker">ЛИЧНЫЕ ДЕЛА</small><h2 id="crew-heading">Команда района</h2><div id="roster"></div><button id="find-bank" class="bank-link"><span data-icon="bank"></span> Банк на карте <span data-icon="right"></span></button></section>
   <section id="mission" class="drawer glass" role="dialog" aria-labelledby="mission-title" hidden><button class="close" aria-label="Закрыть" data-icon="close"></button><small class="kicker" id="quest-number">ГОРОДСКОЙ ЗАКАЗ</small><h2 id="mission-title"></h2><p class="description" id="mission-description"></p><div class="route-row" id="routes"></div><div class="mission-progress"><span>Прогресс</span><b id="mission-progress"></b></div><div class="track"><i id="mission-bar"></i></div><button id="claim" class="action"></button></section>
@@ -47,5 +47,5 @@
     <button id="bank-action" class="action"></button>
   </section>
   <div id="toast" role="status" hidden></div>
-</main><script type="module" src="./app.js?v=harbor5"></script>
+</main><script type="module" src="./app.js?v=bubble6"></script>
 </body></html>
